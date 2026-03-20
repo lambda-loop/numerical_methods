@@ -34,7 +34,8 @@ next m solution = runST do
   solution' <- V.unsafeThaw solution
   -- solution' <- VM.unsafeNew (size solution)
 
-  forM_ [0..m_rows - 1] \i -> do
+  forM_ (reverse [0..m_rows-1]) \i -> do
+  -- forM_ [0..m_rows-1] \i -> do
     -- soo slow
     let other_is = filter (/=i) [0..rows m-1]
     xs <- forM other_is (solution' `VM.read`) 
@@ -61,6 +62,8 @@ v3 = (3><4)
   ,2, 3, 10, 6]
 
 
+v3' = initialSolution v3
+next' = next v3 
 
 
 
