@@ -12,25 +12,6 @@ import qualified Data.Vector.Storable.Mutable as VM
 import Data.STRef
 import GHC.IO (unsafePerformIO)
 
-data LinearSystem = LS 
-
-debug :: Show a => a -> a
-debug x = unsafePerformIO do
-  print x
-  pure x
-
-while :: (a -> Bool) -> ST s a -> ST s a 
-while p st = do 
-  x <- st
-  if p x then while p st
-  else pure x
-
-while_ :: (a -> Bool) -> ST s a -> ST s ()
-while_ p st = do 
-  x <- st
-  if p x then while_ p st
-  else pure ()
-
 -- TODO: have the rows in instant time omg? carry the sizes..?
 initialSolution :: Matrix Double -> Vector Double
 initialSolution m = runST do
