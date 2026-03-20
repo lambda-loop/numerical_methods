@@ -66,4 +66,83 @@ v3' = initialSolution v3
 next' = next v3 
 
 
+next0 :: Matrix Double -> Vector Double -> Vector Double
+next0 m solution = runST do
+  let m_rows   = rows m
+  let last_col = cols m - 1
 
+  solution' <- V.unsafeThaw solution
+  -- solution' <- VM.unsafeNew (size solution)
+
+  forM_ (reverse (filter (/=0) [0..m_rows-1])) \i -> do
+  -- forM_ [0..m_rows-1] \i -> do
+    -- soo slow
+    let other_is = filter (/=i) [0..rows m-1]
+    xs <- forM other_is (solution' `VM.read`) 
+    let aᵢᵢ= m `atIndex` (i, i)
+        bᵢ = m `atIndex` (i, last_col)
+
+        -- slow
+        axs = zipWith (\j x -> -(m `atIndex` (i, j))*x) other_is xs
+        vals = sum axs + bᵢ 
+
+    VM.write solution' i (vals/aᵢᵢ)
+  V.unsafeFreeze solution'
+
+
+next1 :: Matrix Double -> Vector Double -> Vector Double
+next1 m solution = runST do
+  let m_rows   = rows m
+  let last_col = cols m - 1
+
+  solution' <- V.unsafeThaw solution
+  -- solution' <- VM.unsafeNew (size solution)
+
+  forM_ (reverse (filter (/=1) [0..m_rows-1])) \i -> do
+  -- forM_ [0..m_rows-1] \i -> do
+    -- soo slow
+    let other_is = filter (/=i) [0..rows m-1]
+    xs <- forM other_is (solution' `VM.read`) 
+    let aᵢᵢ= m `atIndex` (i, i)
+        bᵢ = m `atIndex` (i, last_col)
+
+        -- slow
+        axs = zipWith (\j x -> -(m `atIndex` (i, j))*x) other_is xs
+        vals = sum axs + bᵢ 
+
+    VM.write solution' i (vals/aᵢᵢ)
+  V.unsafeFreeze solution'
+
+
+next2 :: Matrix Double -> Vector Double -> Vector Double
+next2 m solution = runST do
+  let m_rows   = rows m
+  let last_col = cols m - 1
+
+  solution' <- V.unsafeThaw solution
+  -- solution' <- VM.unsafeNew (size solution)
+
+  forM_ (reverse (filter (/=2) [0..m_rows-1])) \i -> do
+  -- forM_ [0..m_rows-1] \i -> do
+    -- soo slow
+    let other_is = filter (/=i) [0..rows m-1]
+    xs <- forM other_is (solution' `VM.read`) 
+    let aᵢᵢ= m `atIndex` (i, i)
+        bᵢ = m `atIndex` (i, last_col)
+
+        -- slow
+        axs = zipWith (\j x -> -(m `atIndex` (i, j))*x) other_is xs
+        vals = sum axs + bᵢ 
+
+    VM.write solution' i (vals/aᵢᵢ)
+  V.unsafeFreeze solution'
+
+test v = 
+  let v' = initialSolution v
+  in 
+  ( next0 v . next0 v . next2 v . next1 v . next2 v . next0 v
+  . next1 v . next2 v . next0 v . next2 v . next1 v . next1 v
+  . next2 v . next1 v . next0 v . next0 v . next0 v . next1 v)
+   $ next v v'
+
+  
