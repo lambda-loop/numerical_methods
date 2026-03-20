@@ -75,6 +75,8 @@ executable numerical-methods
                     , vector
                     , stm
 
+                    , indexed-traversable ^>=0.1.4 
+
     -- Directories containing source files.
     hs-source-dirs:   src
 
