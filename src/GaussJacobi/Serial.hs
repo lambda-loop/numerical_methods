@@ -34,7 +34,7 @@ next m solution = runST do
 
   solution' <- VM.unsafeNew (size solution)
 
-  forM_ [0..rows m-1] \i -> do
+  forM_ [0..m_rows - 1] \i -> do
     let aᵢᵢ= m `atIndex` (i, i)
         bᵢ = m `atIndex` (i, last_col)
         -- slow
