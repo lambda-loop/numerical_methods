@@ -17,6 +17,7 @@ import Numeric.LinearAlgebra
 import Data.Traversable.WithIndex (ifor)
 import Control.Monad
 
+-- TODO: put another queue to send
 data Row = Row
   { aᵢᵢ :: Double
   , bᵢ  :: Double
@@ -31,8 +32,8 @@ data Row = Row
 
 instance Show Row where
   show Row {..} = 
-    "Row { a"   ++ show i  ++ show i ++ ": " ++ show aᵢᵢ
-    ++ ", b"    ++ show i  ++ ": "   ++ show bᵢ 
+    "Row { a"   ++ show i  ++ show i  ++ ": " ++ show aᵢᵢ
+    ++ ", b"    ++ show i  ++ ": "    ++ show bᵢ 
     ++ ", xs: " ++ show xs ++ ", as:" ++ show as 
     ++ ", i: "  ++ show i  ++ "} "
   
