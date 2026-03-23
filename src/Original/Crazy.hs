@@ -16,18 +16,21 @@ import GaussSeidel.Serial (initialSolution)
 import Numeric.LinearAlgebra
 import Data.Traversable.WithIndex (ifor)
 import Control.Monad
+import Control.Exception.Base (nestedAtomically)
+import Control.Concurrent (forkIO)
 
--- TODO: put another queue to send
+-- TODO: lenses when
 data Row = Row
   { aᵢᵢ :: Double
   , bᵢ  :: Double
+  , i   :: Int
   
   ---- they could be together somehow?
   , xs :: Vector Double -- replace???
   , as :: Vector Double -- replace???
 
-  , q   :: TBQueue (Int, Double)
-  , i   :: Int
+  , receive   :: TBQueue (Int, Double)
+  , send      :: TBQueue (Int, Double)
   } 
 
 instance Show Row where
@@ -40,8 +43,8 @@ instance Show Row where
 
 -- BUG: can access the own indice
 -- shared queue (total mess)
-initializeLines :: TBQueue (Int, Double) -> Matrix Double -> [Row]
-initializeLines q m = runST do 
+initializeLines :: TBQueue (Int, Double) -> TBQueue (Int, Double) -> Matrix Double -> [Row]
+initializeLines send receive m = runST do 
   let last_col = cols m - 1
       js       = [0..last_col]
       s = initialSolution m
@@ -54,7 +57,8 @@ initializeLines q m = runST do
     pure Row {
           aᵢᵢ = aᵢᵢ,
           bᵢ  = bᵢ,
-          q   = q,
+          send    = send,
+          receive = receive,
 
           xs = V.ifilter (\i' _ -> i' /= i) s,
           as = V.fromList as,
@@ -62,19 +66,41 @@ initializeLines q m = runST do
           i = i
     }
 
--- calc and send
--- TODO: Try with the queueB list version!
-worker :: Row -> STM ()
-worker r = do
-  (j, x) <- readTBQueue (q r)
-  when (j == i r) retry
+server :: TBQueue (Int, Double)             -- receive
+       -> Array Int (TBQueue (Int, Double)) -- send
+       -> IO ()
+server r ss = do
+  us <- atomically do 
+    h <- readTBQueue r
+    t <- flushTBQueue r
+    pure (h:t)
+  
+  -- concurrently? nested concurently? 
+  -- big atomically or a lot of small ones?
+  forM_ us \(i, x) -> do
+    forkIO do
+      iforM_ ss \j s -> 
+        when (j /= i) do
+          atomically $ writeTBQueue s (i, x)
 
-  let j' = if j < i r then j else j - 1
-      xs' = V.unsafeUpd (xs r) [(j', x)]
+  server r ss
+  
+
+worker :: Row -> IO ()
+worker r = do
+  us <- atomically do 
+    h <- readTBQueue (receive r)
+    t <- flushTBQueue (receive r)
+    pure (h:t)
+
+  let adjust j | j < i r = j 
+               | otherwise = j - 1
+      us' = (\(j, x) -> (adjust j, x)) <$> us
+      xs' = V.unsafeUpd (xs r) us'
       x' = (aᵢᵢ r *) $ 
         bᵢ r + V.sum (V.zipWith (*) (as r) xs')
 
-  writeTBQueue (q r) (i r, x')
+  atomically $ writeTBQueue (send r) (i r, x')
   worker r 
   
 

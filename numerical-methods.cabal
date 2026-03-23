@@ -73,6 +73,7 @@ executable numerical-methods
     build-depends:    base ^>=4.20.2.0
                     , hmatrix
                     , vector
+                    , array
                     , stm
 
                     , indexed-traversable ^>=0.1.4 
