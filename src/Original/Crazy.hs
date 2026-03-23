@@ -17,7 +17,7 @@ import Numeric.LinearAlgebra
 import Data.Traversable.WithIndex (ifor)
 import Control.Monad
 import Control.Exception.Base (nestedAtomically)
-import Control.Concurrent (forkIO)
+import Control.Concurrent (forkIO, threadDelay)
 
 -- TODO: lenses when
 data Row = Row
@@ -32,6 +32,29 @@ data Row = Row
   , receive   :: TBQueue (Int, Double)
   , send      :: TBQueue (Int, Double)
   } 
+
+mkRow :: Vector Double 
+      -> Int 
+      -> Vector Double 
+      -> TBQueue (Int, Double)
+      -> TBQueue (Int, Double)
+      -> Row
+mkRow v i xs r s = 
+  let aii = v `atIndex` i
+      bi  = v `atIndex` size v - 1
+      as  = dropIndex i v
+  in Row {
+    aᵢᵢ=aii,
+    bᵢ = bi,
+    i  = i,
+ 
+    xs = xs,
+    as = as,
+
+    receive = r,
+    send    = s
+  }
+  
 
 instance Show Row where
   show Row {..} = 
@@ -65,6 +88,22 @@ initializeLines send receive m = runST do
 
           i = i
     }
+
+start :: Matrix Double -> IO ()
+start m = do
+  let rs = toRows m
+  undefined
+
+monitor :: TBQueue (Int, Double) -> Vector Double -> IO ()
+monitor q s = do
+  threadDelay 5_000
+  us <- atomically do 
+    h <- readTBQueue q
+    t <- flushTBQueue q
+    pure (h:t)
+  let s' = V.unsafeUpd s us
+  print s' 
+  monitor q s'
 
 server :: TBQueue (Int, Double)             -- receive
        -> Array Int (TBQueue (Int, Double)) -- send
@@ -116,7 +155,9 @@ v3 = (3><4)
   ,1, 5, 1, (-8)
   ,2, 3, 10, 6]
     
-
+dropIndex :: Int -> Vector Double -> Vector Double
+dropIndex i v = vjoin [subVector 0 i v, subVector (i+1) 
+  ((size v) - i - 1) v]
 
 
 
