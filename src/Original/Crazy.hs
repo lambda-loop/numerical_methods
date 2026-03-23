@@ -8,6 +8,7 @@ import Control.Concurrent.STM.TVar
 import Control.Concurrent.STM
 import GHC.Arr
 import qualified Data.Vector.Storable as V
+import qualified Data.Vector as V_
 import Numeric.LinearAlgebra
 import Control.Monad.ST
 import Data.Foldable.WithIndex
@@ -18,6 +19,7 @@ import Data.Traversable.WithIndex (ifor)
 import Control.Monad
 import Control.Exception.Base (nestedAtomically)
 import Control.Concurrent (forkIO, threadDelay)
+import Data.Functor.Identity
 
 -- TODO: lenses when
 data Row = Row
@@ -41,14 +43,15 @@ mkRow :: Vector Double
       -> Row
 mkRow v i xs r s = 
   let aii = v `atIndex` i
-      bi  = v `atIndex` size v - 1
+      bi  = v `atIndex` (size v - 1)
+      xs' = dropIndex i xs
       as  = dropIndex i v
   in Row {
     aᵢᵢ=aii,
     bᵢ = bi,
     i  = i,
  
-    xs = xs,
+    xs = xs',
     as = as,
 
     receive = r,
@@ -89,10 +92,33 @@ initializeLines send receive m = runST do
           i = i
     }
 
-start :: Matrix Double -> IO ()
-start m = do
+start :: Matrix Double 
+      -> Vector Double
+      -> IO ()
+start m xs = do
+  qs <- replicateM (rows m) (newTBQueueIO 10_000)
   let rs = toRows m
-  undefined
+      qs'= V_.fromList qs
+  server_q  <- newTBQueueIO 10_000
+  monitor_q <- newTBQueueIO 10_000
+
+  print "step 1"
+  rs' <- ifor rs \i r -> pure $
+      mkRow r i (dropIndex i xs) 
+                (qs' V_.! i) 
+                server_q
+  forM_ rs' \r -> do
+    (void . forkIO) (worker' r)
+
+  print "step 2"
+
+  
+  let qs'' = qs' `V_.snoc` monitor_q
+  (void . forkIO) (server server_q qs'')
+  print "step 3"
+  monitor monitor_q xs
+
+  
 
 monitor :: TBQueue (Int, Double) -> Vector Double -> IO ()
 monitor q s = do
@@ -106,7 +132,7 @@ monitor q s = do
   monitor q s'
 
 server :: TBQueue (Int, Double)             -- receive
-       -> Array Int (TBQueue (Int, Double)) -- send
+       -> V_.Vector (TBQueue (Int, Double)) -- send
        -> IO ()
 server r ss = do
   us <- atomically do 
@@ -118,7 +144,7 @@ server r ss = do
   -- big atomically or a lot of small ones?
   forM_ us \(i, x) -> do
     forkIO do
-      iforM_ ss \j s -> 
+      V_.iforM_ ss \j s -> 
         when (j /= i) do
           atomically $ writeTBQueue s (i, x)
 
@@ -136,7 +162,7 @@ worker r = do
                | otherwise = j - 1
       us' = (\(j, x) -> (adjust j, x)) <$> us
       xs' = V.unsafeUpd (xs r) us'
-      x' = (aᵢᵢ r *) $ 
+      x' = (1/(aᵢᵢ r) *) $ 
         bᵢ r + V.sum (V.zipWith (*) (as r) xs')
 
   atomically $ writeTBQueue (send r) (i r, x')
@@ -159,8 +185,15 @@ dropIndex :: Int -> Vector Double -> Vector Double
 dropIndex i v = vjoin [subVector 0 i v, subVector (i+1) 
   ((size v) - i - 1) v]
 
-
-
+test :: Matrix Double -> IO ()
+test m = do
+  start m (initialSolution m)
   
 
-  
+worker' :: Row -> IO ()
+worker' r = do
+  let calculate currentXs = (1 / aᵢᵢ r) * (bᵢ r + V.sum (V.zipWith (*) (as r) currentXs))
+  let initialX = calculate (xs r)
+  atomically $ writeTBQueue (send r) (i r, initialX)
+
+  worker r
