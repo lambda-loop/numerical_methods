@@ -5,16 +5,21 @@ import Control.Concurrent
 import Control.Concurrent.STM.TBQueue
 import Control.Monad.STM
 import Control.Monad
+import Original.Amortization
 
 main :: IO ()
-main = do 
-  queue <- newTBQueueIO 10_000
-  void . forkIO $ one queue
-  void . forkIO $ two queue
+main = do
+  testao 30
 
-  atomically $ writeTBQueue queue ""
-  aux queue
-  pure ()
+-- main :: IO ()
+-- main = do 
+--   queue <- newTBQueueIO 10_000
+--   void . forkIO $ one queue
+--   void . forkIO $ two queue
+--
+--   atomically $ writeTBQueue queue ""
+--   aux queue
+--   pure ()
 
 aux :: TBQueue String -> IO ()
 aux queue = do

@@ -62,21 +62,28 @@ executable numerical-methods
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules:  GaussJacobi.Serial
+    other-modules: 
+                  , Read
+                  , GaussJacobi.Serial
                   , GaussSeidel.Serial
-                  , Original.Crazy
+                  , Original.Crazy 
+                  , Original.Amortization
+
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.20.2.0
+    build-depends:  , base ^>=4.20.2.0
                     , hmatrix
                     , vector
                     , array
+
                     , stm
+                    , async
 
                     , indexed-traversable ^>=0.1.4 
+                    , time
 
     -- Directories containing source files.
     hs-source-dirs:   src
