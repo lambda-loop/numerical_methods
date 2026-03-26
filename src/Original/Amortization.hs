@@ -121,7 +121,6 @@ run'' n m = do
     loop n' _ xs' = do 
       xs'' <- next' m xs'
       loop (n'-1) xs' xs''
-      
 
 mGen :: String -> IO (Matrix Double)
 mGen filepath = do
@@ -134,29 +133,20 @@ clock ax = do
   end <- getCurrentTime 
   pure (diffUTCTime end start, x)
 
--- mTest = mGen "ms/new/153.mtx"    CULPADA
--- mTest   = mGen "ms/new/147.mtx"  CULPADA
--- mTest   = mGen "ms/new/48.mtx"      INOCENTE
--- mTest = mGen "ms/new/124.mtx"    CULPADA
--- mTest = mGen "ms/new/66.mtx"     CULPADA 
--- mTest = mGen "ms/new/27.mtx"     CULPADA
--- mTest = mGen "ms/new/4K.mtx"     
--- mTest = gerarMatrizJacobi 10_000
-
 testao n = do
-  !m       <- gerarMatrizJacobi n
-  (t , _) <- clock (run' m)
-  (t0, _) <- clock (run'' 0 m)
-  (t1, _) <- clock (run'' 1 m)
-  (t2, _) <- clock (run'' 2 m)
-  (t3, _) <- clock (run'' 3 m)
-  (t4, _) <- clock (run'' 4 m)
-  (t5, _) <- clock (run'' 5 m)
-  (t6, _) <- clock (run'' 6 m)
-  (t7, _) <- clock (run'' 7 m)
-  (t8, _) <- clock (run'' 8 m)
-  (t9, _) <- clock (run'' 9 m)
-  (t10, _) <- clock (run'' 10 m)
+  !m       <- generateMatrix n
+  (t ,  !_) <- clock (run' m)
+  (t0,  !_) <- clock (run'' 0 m)
+  (t1,  !_) <- clock (run'' 1 m)
+  (t2,  !_) <- clock (run'' 2 m)
+  (t3,  !_) <- clock (run'' 3 m)
+  (t4,  !_) <- clock (run'' 4 m)
+  (t5,  !_) <- clock (run'' 5 m)
+  (t6,  !_) <- clock (run'' 6 m)
+  (t7,  !_) <- clock (run'' 7 m)
+  (t8,  !_) <- clock (run'' 8 m)
+  (t9,  !_) <- clock (run'' 9 m)
+  (t10, !_) <- clock (run'' 10 m)
   print t
   print t0
   print t1
@@ -170,122 +160,31 @@ testao n = do
   print t9
   print t10
 
-m4K    = mGen "ms/new/4K.mtx"
-test4K = do
-  m <- m4K
-  -- (t0, _) <- clock (run'' 50000 m)
-  -- (t1, _) <- clock (run'' 5000 m)
-  -- (t2, _) <- clock (run'' 500 m)
-  (t3, _) <- clock (run' m)
-  -- print t0
-  -- print t1
-  -- print t2
-  print t3
-  
-m10K    = mGen "ms/new/10K.mtx"
-test10K = do
-  m <- m10K
-  clock (run'' 50000 m)
-  clock (run'' 5000 m)
-  clock (run'' 500 m)
-  clock (run' m)
-
-m20K  = mGen "ms/new/20K.mtx"
-test20K = do
-  m <- m20K
-  clock (run'' 50000 m)
-  clock (run'' 5000 m)
-  clock (run'' 500 m)
-  clock (run' m)
-
-m200K = mGen "ms/new/200K.mtx"
-test200K = do
-  m <- m200K
-  clock (run'' 50000 m)
-  clock (run'' 5000 m)
-  clock (run'' 500 m)
-  clock (run' m)
-
--- AI AI AI AI
--- Função Detetive: Verifica se a matriz atende aos requisitos do Jacobi
-detetive :: Matrix Double -> IO ()
-detetive m = do
-  let n = rows m
-      -- 1. Separa só a matriz A (ignorando a última coluna que é o vetor B)
-      matA = takeColumns n m
-      linhas = toLists matA -- Converte pra lista do Haskell pra facilitar a inspeção
-  
-  putStrLn "🔍 Iniciando a investigação da matriz..."
-  
-  -- 2. Varre as linhas procurando os crimes (Diagonal fraca)
-  let crimes = do 
-        (i, linha) <- zip [0..] linhas
-        let a_ii = abs (linha !! i)
-            somaVizinhos = sum (map abs linha) - a_ii
-        -- O Crime: A diagonal é menor ou igual à soma dos vizinhos?
-        if a_ii <= somaVizinhos
-          then [(i, a_ii, somaVizinhos)]
-          else []
-          
-  -- 3. Emite o veredito
-  if null crimes
-    then putStrLn "✅ Matriz INOCENTE! A diagonal é dominante. O Jacobi DEVE funcionar."
-    else do
-      putStrLn $ "🚨 Matriz CULPADA! Encontramos " ++ show (length crimes) ++ " linha(s) onde a diagonal perde pros vizinhos."
-      putStrLn "Aqui estão as 5 primeiras infrações (Linha | Valor Absoluto Diagonal | Soma dos Vizinhos):"
-      forM_ (take 5 crimes) \(i, diag, soma) ->
-        putStrLn $ " -> Linha " ++ show i ++ ": Diagonal = " ++ show diag ++ " | Soma = " ++ show soma
-
--- Injeta esteroides na diagonal para forçar o Jacobi a funcionar
-domarMatriz :: Matrix Double -> Matrix Double
-domarMatriz m = 
-  let n = rows m
-      matA = takeColumns n m
-      vecB = dropColumns n m -- Salva o vetor b intacto
-      
-      -- Cria uma matriz só com números 10000 na diagonal
-      esteroides = diag (konst 10000 n)
-      
-      -- Soma os esteroides na matriz A original
-      matA_domada = matA + esteroides
-      
-  -- Junta o novo A com o B de volta usando o operador ||| (concatenação horizontal)
-  in matA_domada ||| vecB
-
--- O Laboratório: Gera uma matriz de tamanho N perfeitamente dominada na diagonal
-gerarMatrizJacobi :: Int -> IO (Matrix Double)
-gerarMatrizJacobi n = do
-  putStrLn $ "🧪 Fabricando uma matriz " ++ show n ++ "x" ++ show n ++ " à prova de NaN..."
-  
-  -- 1. Gera uma matriz NxN com números aleatórios (entre 0 e 1, multiplicados por 10)
+generateMatrix :: Int -> IO (Matrix Double)
+generateMatrix n = do
+  print "generating"
   matRaw <- rand n n
-  let matAleatoria = scale 10.0 matRaw
+  let randMat = scale 10.0 matRaw
       
-  -- Vamos converter para as listas clássicas do Haskell para manipular a diagonal
-  let linhas = toLists matAleatoria
+  let rows_ = toLists randMat
   
-  -- 2. A MÁGICA: Reconstrói as linhas garantindo a Dominância Diagonal
-  let linhasDominantes = do
-        (i, linha) <- zip [0..] linhas
+  let dominantRows = do
+        (i, row_) <- zip [0..] rows_
+        let neighborhood_sum = sum (map abs row_) - abs (row_ !! i)
+        -- let higher = maximum (map abs row_) -- - abs (row_ !! i)
         
-        -- Soma todo mundo, mas tira o cara que já tá na diagonal
-        let somaVizinhos = sum (map abs linha) - abs (linha !! i)
+        let newDiag = neighborhood_sum + 0.25
         
-        -- A nova diagonal vai ser a soma de todos os vizinhos + 5.0 (o "chorinho" pra garantir a vitória)
-        let novaDiagonal = somaVizinhos + 5.0
+        let newRow = take i row_ ++ [newDiag] ++ drop (i + 1) row_
+        return newRow
         
-        -- Coloca o peso pesado na cadeira da diagonal (posição 'i')
-        let novaLinha = take i linha ++ [novaDiagonal] ++ drop (i + 1) linha
-        return novaLinha
-        
-  -- 3. Transforma as listas de volta para o formato de alta performance da hmatrix
-  let !matA_perfeita = fromLists linhasDominantes
+  let !perfectM = fromLists dominantRows
   
-  -- 4. Gera o vetor B aleatório também (Nx1)
   vecB_raw <- rand n 1
   let !vecB = scale 10.0 vecB_raw
   
-  -- 5. Cola o vetor B do lado direito da matriz A (Matriz Aumentada) usando o operador |||
-  pure (matA_perfeita ||| vecB)
+  print "end generation"
+  pure (perfectM ||| vecB)
 
-epsi = 1e-15
+epsi :: Double
+epsi = 1e-5

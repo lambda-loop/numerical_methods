@@ -52,7 +52,7 @@ extra-doc-files:    CHANGELOG.md
 -- extra-source-files:
 
 common warnings
-    ghc-options: -Wall -threaded 
+    ghc-options: -Wall -threaded -rtsopts 
 
 executable numerical-methods
     -- Import common warning flags.
@@ -71,7 +71,7 @@ executable numerical-methods
 
 
     -- LANGUAGE extensions used by modules in this package.
-    -- other-extensions:
+    other-extensions: Strict
 
     -- Other library packages from which modules are imported.
     build-depends:  , base ^>=4.20.2.0
@@ -84,6 +84,8 @@ executable numerical-methods
 
                     , indexed-traversable ^>=0.1.4 
                     , time
+
+                    , lens
 
     -- Directories containing source files.
     hs-source-dirs:   src
