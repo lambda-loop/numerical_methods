@@ -8,10 +8,10 @@ struct matrix {
   int size;
 };
 
-void serial(matrix &m) {
+void jacobi_serial(matrix &m) {
   int size = m.size;
-  std::vector<double> xs(m.xs);
 
+  auto old_xs = m.xs;
   auto &as = m.as;
   auto &bs = m.bs;
 
@@ -20,11 +20,10 @@ void serial(matrix &m) {
     double sum = bs[i];
     for (int j = 0; j < size; j++) {
       if(i!=j) {
-        sum -= as[i][j] * xs[j];
+        sum -= as[i][j] * old_xs[j];
       }
     }
-    xs[i] = sum/aii;
+    m.xs[i] = sum/aii;
   }
-  m.xs = std::move(xs);
 }
 
