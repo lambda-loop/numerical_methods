@@ -1,0 +1,119 @@
+
+#include <iomanip>
+#include <iostream>
+#include <random>
+#include <vector>
+
+class matrix {
+public: 
+  std::vector<double>              xs;
+  std::vector<std::vector<double>> as;
+  std::vector<double>              bs;
+  int size;
+
+  matrix (std::vector<std::vector<double>> &m) {
+    int size = m.size() - 1;
+    this->xs = {};
+    this->as = {};
+    this->bs = {};
+
+    for (int i = 0; i < size; i++) {
+      std::vector<double> a_iline;
+      for (int j = 0; j < size; j++) {
+        a_iline.push_back(m[i][j]);
+      }
+      this->as.push_back(a_iline);
+    }
+
+    for (int i = 0; i < size; i++) {
+      this->bs.push_back(m[i][size+1]);
+    }
+
+    std::vector<double> xs;
+    for (int i = 0; i < size; i++) {
+      this->xs.push_back(0.0);
+    }
+  }
+
+  matrix(int n) {
+    std::vector<std::vector<double>> m(n, std::vector<double>(n + 1, 0.0));
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<double> dis(-100000.0, 10000.0);
+
+    double margem = 1e-15; 
+
+    for (int i = 0; i < n; ++i) {
+      double soma_linha = 0.0;
+
+      for (int j = 0; j < n + 1; ++j) {
+        m[i][j] = dis(gen);
+
+        if (i != j && j < n) {
+          soma_linha += std::abs(m[i][j]);
+        }
+      }
+
+      double valor_dominante = soma_linha + margem;
+      m[i][i] = std::copysign(valor_dominante, m[i][i]); 
+    }
+
+    auto m_ = matrix(m);
+    this->xs = m_.xs;
+    this->as = m_.as;
+    this->bs = m_.bs;
+  }
+
+  void print (const std::vector<std::vector<double>>& m) {
+    int n = m.size();
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < n + 1; ++j) {
+        std::cout << std::setw(10) << std::setprecision(4) << m[i][j] << " ";
+        if (j == n - 1) std::cout << "| "; 
+      }
+      std::cout << "\n";
+    }
+  }
+
+  void jacobi_step ( 
+    int begin, int end, 
+    std::vector<double> &old_xs
+  ) {
+  
+    for(int i = begin; i < end; i++) {
+      double aii = this->as[i][i];
+      double sum = this->bs[i];
+      for (int j = begin; j < end ; j++) {
+        if (i!=j) {
+          sum -= this->as[i][j] * old_xs[j];
+        }
+      }
+  
+      this->xs[i] = sum/aii;
+    }
+  }
+
+  inline bool converged
+    (const std::vector<double> &old_xs, 
+     const std::vector<double> &new_xs, 
+     double tolerancia) {
+    double maior_diferenca = 0.0;
+
+    for (int i = 0; i < new_xs.size(); i++) {
+      double diferenca_atual = std::abs(new_xs[i] - old_xs[i]);
+      if (diferenca_atual > maior_diferenca) {
+        maior_diferenca = diferenca_atual;
+      }
+    }
+
+    return maior_diferenca < tolerancia;
+  }
+
+
+
+
+
+};
+
+

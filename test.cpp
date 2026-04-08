@@ -6,6 +6,7 @@
 #include <cmath>
 #include <iomanip>
 
+#define TIMES 10
 // todo: std::array~std::array instead
 struct matrix {
   std::vector<double> xs;
@@ -40,6 +41,69 @@ matrix mkmatrix (std::vector<std::vector<double>> m) {
     xs, as, bs, size
   };
 }
+
+
+std::vector<double> jacobi_aserial(matrix &m) {
+  int size = m.size;
+
+  auto &as = m.as;
+  auto &bs = m.bs;
+
+  auto xs1 = m.xs;
+  auto xs2 = m.xs;
+
+  for (int j = 0; j < TIMES; j++) {
+    for(int i = 0; i < size; i++) {
+      double aii = as[i][i];
+      double sum = bs[i];
+      for (int j = 0; j < size; j++) {
+        if (i!=j) {
+          sum -= as[i][j] * xs1[j];
+        }
+      }
+
+      xs2[i] = sum/aii;
+    }
+
+    for(int i = 0; i < size; i++) {
+      double aii = as[i][i];
+      double sum = bs[i];
+      for (int j = 0; j < size; j++) {
+        if (i!=j) {
+          sum -= as[i][j] * xs2[j];
+        }
+      }
+
+      xs1[i] = sum/aii;
+    }
+  }
+
+  m.xs = std::move(xs1);
+  return xs2;
+}
+
+
+
+void jacobi_serial(matrix &m) {
+  int size = m.size;
+
+  auto old_xs = m.xs;
+  auto &as = m.as;
+  auto &bs = m.bs;
+
+  for(int i = 0; i < size; i++) {
+    double aii = as[i][i];
+    double sum = bs[i];
+    for (int j = 0; j < size; j++) {
+      if (i!=j) {
+        sum -= as[i][j] * old_xs[j];
+      }
+    }
+
+    m.xs[i] = sum/aii;
+  }
+}
+
 
 void serial(matrix *m) {
   int size = m->size;
@@ -118,7 +182,43 @@ bool testar_convergencia(const std::vector<double>& x_antigo, const std::vector<
     return maior_diferenca < tolerancia;
 }
 
-void resolver_ate_convergir(matrix& m, double tolerancia = 1e-9, int max_iter = 10000) {
+double resolver_ate_convergir_(matrix& m
+                             , double tolerancia = 1e-9
+                             , int max_iter = 10000) {
+    bool convergiu = false;
+    int iteracoes = 0;
+    std::vector<double> old_xs;
+
+    // int controler = amortizer;
+    auto inicio_tempo = std::chrono::high_resolution_clock::now();
+
+    while (!convergiu && iteracoes < max_iter) {
+        
+        old_xs = jacobi_aserial(m);
+        convergiu = testar_convergencia(old_xs, m.xs, tolerancia);
+        // iteracoes+= amortizer;
+    }
+
+    // Para o cronômetro
+    auto fim_tempo = std::chrono::high_resolution_clock::now();
+    
+    // Calcula a duração em segundos
+    std::chrono::duration<double> duracao = fim_tempo - inicio_tempo;
+
+    // Imprime o relatório
+    std::cout << "--- Relatório de Execução ---\n";
+    if (convergiu) {
+        std::cout << "Status: Convergiu com sucesso!\n";
+    } else {
+        std::cout << "Status: ALERTA! Atingiu o limite de " << max_iter << " iterações sem convergir.\n";
+    }
+    std::cout << "Iterações: " << iteracoes << "\n";
+    std::cout << "Tempo gasto: " << duracao.count() << " segundos.\n";
+    std::cout << "-----------------------------\n";
+    return duracao.count();
+}
+
+double resolver_ate_convergir(matrix& m, double tolerancia = 1e-9, int max_iter = 10000) {
     bool convergiu = false;
     int iteracoes = 0;
     std::vector<double> x_antigo = m.xs; // Guarda o estado inicial
@@ -129,9 +229,8 @@ void resolver_ate_convergir(matrix& m, double tolerancia = 1e-9, int max_iter = 
     while (!convergiu && iteracoes < max_iter) {
         x_antigo = m.xs; // Salva os valores antes de atualizar
         
-        serial(&m);       // Roda 1 iteração do seu método (modifica m.xs)
+        jacobi_serial(m);       // Roda 1 iteração do seu método (modifica m.xs)
         
-        // Checa se bateu a meta
         convergiu = testar_convergencia(x_antigo, m.xs, tolerancia);
         iteracoes++;
     }
@@ -152,20 +251,26 @@ void resolver_ate_convergir(matrix& m, double tolerancia = 1e-9, int max_iter = 
     std::cout << "Iterações: " << iteracoes << "\n";
     std::cout << "Tempo gasto: " << duracao.count() << " segundos.\n";
     std::cout << "-----------------------------\n";
+    return duracao.count();
 }
 
 int main() {
-    int tamanho_sistema = 12000; // Bora testar com uma matriz 1000x1000
+    int tamanho_sistema = 2500; // Bora testar com uma matriz 1000x1000
     
-    std::cout << "Gerando matriz...\n";
-    std::vector<std::vector<double>> matriz_bruta = gerar_matriz_dominante(tamanho_sistema);
+    double sum = 0;
+    int times  = 10;
+    for(int i = 0; i < times; i++) {
+      std::cout << "Gerando matriz...\n";
+      std::vector<std::vector<double>> matriz_bruta = gerar_matriz_dominante(tamanho_sistema);
+      
+      std::cout << "Estruturando matriz no formato da struct...\n";
+      matrix m = mkmatrix(matriz_bruta);
+      
+      std::cout << "Resolvendo sistema...\n";
+      // Chama a função que roda o laço e cronometra
+      sum += resolver_ate_convergir_(m, 1e-15); 
+    }
     
-    std::cout << "Estruturando matriz no formato da struct...\n";
-    matrix m = mkmatrix(matriz_bruta);
-    
-    std::cout << "Resolvendo sistema...\n";
-    // Chama a função que roda o laço e cronometra
-    resolver_ate_convergir(m, 1e-9); 
-
+    std::cout << "average: " << sum/times;
     return 0;
 }
