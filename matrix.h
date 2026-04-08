@@ -36,7 +36,7 @@ public:
   }
 
   matrix(int n) {
-    std::vector<std::vector<double>> m(n, std::vector<double>(n + 1, 0.0));
+    std::vector<std::vector<double>> m(n, std::vector<double> (n + 1, 0.0));
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -76,9 +76,9 @@ public:
     }
   }
 
-  void jacobi_step ( 
-    int begin, int end, 
-    std::vector<double> &old_xs
+  inline void jacobi_step ( 
+    const int begin, const int end, 
+    const std::vector<double> &old_xs
   ) {
   
     for(int i = begin; i < end; i++) {
@@ -96,24 +96,18 @@ public:
 
   inline bool converged
     (const std::vector<double> &old_xs, 
-     const std::vector<double> &new_xs, 
-     double tolerancia) {
-    double maior_diferenca = 0.0;
+     const double ε) {
+     double highest_diff = 0.0;
 
-    for (int i = 0; i < new_xs.size(); i++) {
-      double diferenca_atual = std::abs(new_xs[i] - old_xs[i]);
-      if (diferenca_atual > maior_diferenca) {
-        maior_diferenca = diferenca_atual;
+    for (int i = 0; i < this->xs.size(); i++) {
+      double current_diff = std::abs(this->xs[i] - old_xs[i]);
+      if (current_diff > highest_diff) {
+        highest_diff = current_diff;
       }
     }
 
-    return maior_diferenca < tolerancia;
+    return highest_diff < ε;
   }
-
-
-
-
-
 };
 
 

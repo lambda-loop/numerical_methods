@@ -2,59 +2,49 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <chrono>
+#include "matrix.h"
 
-#include <matrix.h>
-
-#define SIZE   10
-#define TIMES 100
+#define SIZE        10
+// #define TIMES      100
+#define MAX_ITERS 1000
 
 auto m = matrix(SIZE);
 
-inline void serial () {
-    bool convergiu = false;
-    int iteracoes = 0;
-    std::vector<double> old_xs;
+inline int serial () {
+  bool converged = false;
+  int iters = 0;
 
-    // int controler = amortizer;
-    auto inicio_tempo = std::chrono::high_resolution_clock::now();
+  std::vector<double> old_xs = m.xs;
 
-    while (!convergiu && iteracoes < max_iter) {
-        
-        old_xs = jacobi_aserial(m);
-        convergiu = testar_convergencia(old_xs, m.xs, tolerancia);
-        // iteracoes+= amortizer;
-    }
+  auto time0 = std::chrono::high_resolution_clock::now();
+  while (!converged&& iters < MAX_ITERS) {
+    old_xs = m.xs;
+    m.jacobi_step(0, SIZE, old_xs);
+    converged = m.converged(old_xs, 1e-15);
+    iters++;
+  }
 
-    // Para o cronômetro
-    auto fim_tempo = std::chrono::high_resolution_clock::now();
-    
-    // Calcula a duração em segundos
-    std::chrono::duration<double> duracao = fim_tempo - inicio_tempo;
+  auto time1 = std::chrono::high_resolution_clock::now();
 
-    // Imprime o relatório
-    std::cout << "--- Relatório de Execução ---\n";
-    if (convergiu) {
-        std::cout << "Status: Convergiu com sucesso!\n";
-    } else {
-        std::cout << "Status: ALERTA! Atingiu o limite de " << max_iter << " iterações sem convergir.\n";
-    }
-    std::cout << "Iterações: " << iteracoes << "\n";
-    std::cout << "Tempo gasto: " << duracao.count() << " segundos.\n";
-    std::cout << "-----------------------------\n";
-    return duracao.count();
-  
+  std::chrono::duration<double> duracao = time1 - time0;
 
-
-
+  std::cout << "--- Relatório de Execução ---\n";
+  if (converged) {
+    std::cout << "Status: Convergiu com sucesso!\n";
+  } else {
+    std::cout << "Status: ALERTA! Atingiu o limite de " << MAX_ITERS << " iterações sem convergir.\n";
+  }
+  std::cout << "Iterações: " << iters << "\n";
+  std::cout << "Tempo gasto: " << duracao.count() << " segundos.\n";
+  std::cout << "-----------------------------\n";
+  return duracao.count();
 }
 
 
 int main () {
-
-  
-
-
-
+  serial();
+  return 0;
 }
 
 
