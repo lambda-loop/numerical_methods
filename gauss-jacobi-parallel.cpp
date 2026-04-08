@@ -5,11 +5,12 @@
 #include <chrono>
 #include "matrix.h"
 
-#define SIZE        10
+#define SIZE        10000
 // #define TIMES      100
 #define MAX_ITERS 1000
 
-auto m = matrix(SIZE);
+matrix m = matrix(SIZE);
+const int SIZEB = (SIZE-1);
 
 inline int serial () {
   bool converged = false;
@@ -20,7 +21,7 @@ inline int serial () {
   auto time0 = std::chrono::high_resolution_clock::now();
   while (!converged&& iters < MAX_ITERS) {
     old_xs = m.xs;
-    m.jacobi_step(0, SIZE, old_xs);
+    m.jacobi_step(0, SIZEB, old_xs);
     converged = m.converged(old_xs, 1e-15);
     iters++;
   }
@@ -43,6 +44,8 @@ inline int serial () {
 
 
 int main () {
+  // matrix m = matrix(SIZE);
+  // m.print();
   serial();
   return 0;
 }

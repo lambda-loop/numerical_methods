@@ -65,12 +65,14 @@ public:
     this->bs = m_.bs;
   }
 
-  void print (const std::vector<std::vector<double>>& m) {
-    int n = m.size();
-    for (int i = 0; i < n; ++i) {
-      for (int j = 0; j < n + 1; ++j) {
-        std::cout << std::setw(10) << std::setprecision(4) << m[i][j] << " ";
-        if (j == n - 1) std::cout << "| "; 
+  void print() {
+    for (int i = 0; i < this->as.size(); ++i) {
+      for (int j = 0; j < this->as[i].size(); ++j) {
+        std::cout << std::setw(10) << std::fixed << std::setprecision(4) << this->as[i][j] << " ";
+      }
+
+      if (i < this->bs.size()) {
+        std::cout << "| " << std::setw(10) << std::fixed << std::setprecision(4) << this->bs[i];
       }
       std::cout << "\n";
     }
@@ -80,7 +82,7 @@ public:
     const int begin, const int end, 
     const std::vector<double> &old_xs
   ) {
-  
+
     for(int i = begin; i < end; i++) {
       double aii = this->as[i][i];
       double sum = this->bs[i];
@@ -89,15 +91,15 @@ public:
           sum -= this->as[i][j] * old_xs[j];
         }
       }
-  
+
       this->xs[i] = sum/aii;
     }
   }
 
   inline bool converged
-    (const std::vector<double> &old_xs, 
-     const double ε) {
-     double highest_diff = 0.0;
+  (const std::vector<double> &old_xs, 
+   const double ε) {
+    double highest_diff = 0.0;
 
     for (int i = 0; i < this->xs.size(); i++) {
       double current_diff = std::abs(this->xs[i] - old_xs[i]);
@@ -108,6 +110,7 @@ public:
 
     return highest_diff < ε;
   }
+
 };
 
 
