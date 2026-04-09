@@ -63,6 +63,7 @@ public:
     this->xs = m_.xs;
     this->as = m_.as;
     this->bs = m_.bs;
+    this->size = m_.size;
   }
 
   void print() {
@@ -86,7 +87,7 @@ public:
     for(int i = begin; i < end; i++) {
       double aii = this->as[i][i];
       double sum = this->bs[i];
-      for (int j = begin; j < end ; j++) {
+      for (int j = 0; j < old_xs.size(); j++) {
         if (i!=j) {
           sum -= this->as[i][j] * old_xs[j];
         }
